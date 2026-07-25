@@ -1,0 +1,40 @@
+{% extends 'onboarding/base.html' %}
+{% load static %}
+{% block content %}
+<div class="chat"
+     data-api="{% url 'chat_api' %}"
+     data-upload="{% url 'chat_upload' %}"
+     data-ready="{{ gemini_ready|yesno:'1,0' }}">
+
+  <div class="transcript" id="transcript">
+    {% for b in bubbles %}
+      <div class="msg {{ b.role }}">{{ b.text }}</div>
+    {% endfor %}
+    {% if bubbles|length == 1 %}
+    <div class="quick" id="opening">
+      <button class="qchip" data-action="import">📄 Import SBC / EOB</button>
+      <button class="qchip" data-action="chat">💬 Just chat</button>
+    </div>
+    {% endif %}
+  </div>
+
+  <form class="composer" id="composer" autocomplete="off">
+    <div class="attach-wrap">
+      <button type="button" class="attach-btn" id="attachBtn"
+              aria-label="Attach a document">+</button>
+      <div class="attach-menu" id="attachMenu" hidden>
+        <button type="button" data-doc="SBC">📄 Attach SBC</button>
+        <button type="button" data-doc="EOB">🧾 Attach EOB</button>
+        <button type="button" data-doc="both">📎 Attach a file</button>
+      </div>
+    </div>
+    <input type="text" id="msgInput" placeholder="Type your answer…" autocomplete="off">
+    <button type="submit" class="send-btn" id="sendBtn">Send</button>
+  </form>
+
+  <input type="file" id="fileInput"
+         accept="image/*,application/pdf" capture="environment" multiple hidden>
+</div>
+
+<script src="{% static 'onboarding/chat.js' %}"></script>
+{% endblock %}

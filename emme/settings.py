@@ -58,8 +58,10 @@ WSGI_APPLICATION = "emme.wsgi.application"
 # No database — state lives in the signed session cookie.
 DATABASES = {}
 
-# Store session data in a signed cookie so we need no DB table.
-SESSION_ENGINE = "django.contrib.sessions.backends.signed_cookies"
+# File-based sessions: no database, but (unlike signed cookies) big enough to
+# hold a chat transcript. Stored under SESSION_FILE_PATH (system temp by default).
+SESSION_ENGINE = "django.contrib.sessions.backends.file"
+SESSION_FILE_PATH = str(BASE_DIR / ".sessions")
 SESSION_COOKIE_HTTPONLY = True
 SESSION_SAVE_EVERY_REQUEST = True
 

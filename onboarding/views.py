@@ -10,12 +10,13 @@ from collections import Counter
 from datetime import datetime, timezone
 
 from django.conf import settings
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
+from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.decorators.http import require_http_methods
 
-from . import flow, forms, gemini, schema
+from . import chat, flow, forms, gemini, schema
 from .carriers import CARRIERS
 
 # Fields that make an estimate meaningful (drives the readiness indicator).
@@ -408,4 +409,134 @@ def summary_json(request):
 @require_http_methods(["GET", "POST"])
 def reset(request):
     request.session.flush()
-    return redirect("welcome")
+    return redirect("chat_home")
+
+
+# --- Chat interface -------------------------------------------------------
+def _history(request):
+    """The transcript. Model turns store the natural-language reply only."""
+    h = request.session.get("history")
+    if h is None:
+        h = [{"role": "model", "text": chat.OPENING}]
+        request.session["history"] = h
+        request.session.modified = True
+    return h
+
+
+def _bubbles(history):
+    """Map stored turns to display bubbles (model -> bot)."""
+    return [{"role": "bot" if h["role"] == "model" else "user", "text": h["text"]}
+            for h in history]
+
+
+@ensure_csrf_cookie
+@require_http_methods(["GET"])
+def chat_home(request):
+    data = _get_data(request)
+    history = _history(request)
+    return render(request, "onboarding/chat.html", {
+        "bubbles": _bubbles(history),
+        "gemini_ready": chat.is_configured(),
+        "name": schema.get_path(data, "identity.name"),
+    })
+
+
+def _finish_turn(request, data, history, result):
+    """Apply a chat result, advance phase, and build the JSON response."""
+    chat.apply_updates(data, result["updates"], result["unsure"])
+    request.session["manual_used"] = True
+    _touch_source(request, data)
+
+    phase = result["phase"]
+    if phase == "complete" and chat.required_remaining(data):
+        phase = "collecting"  # never finish with required fields still open
+
+    reply = result["reply"]
+    history.append({"role": "model", "text": reply})
+
+    done, redirect_url = False, None
+    if phase == "complete":
+        data["meta"]["completedAt"] = datetime.now(timezone.utc).isoformat()
+        done, redirect_url = True, reverse("summary")
+
+    _save(request, data)
+    request.session["history"] = history
+    request.session.modified = True
+    return JsonResponse({
+        "messages": [{"role": "bot", "text": reply}],
+        "phase": phase, "done": done, "redirect": redirect_url,
+    })
+
+
+@require_http_methods(["POST"])
+def chat_api(request):
+    data = _get_data(request)
+    history = _history(request)
+    try:
+        message = (json.loads(request.body or "{}").get("message") or "").strip()
+    except (ValueError, TypeError):
+        return JsonResponse({"error": "bad request"}, status=400)
+    if not message:
+        return JsonResponse({"error": "empty message"}, status=400)
+
+    history.append({"role": "user", "text": message})
+    try:
+        result = chat.respond(history, data)
+    except chat.ChatUnavailable:
+        msg = ("Chat needs a Gemini API key to run. Add GEMINI_API_KEY to your .env "
+               "and restart, and I’ll be right with you.")
+        history.append({"role": "model", "text": msg})
+        request.session["history"] = history
+        request.session.modified = True
+        return JsonResponse({"messages": [{"role": "bot", "text": msg}],
+                             "phase": "collecting", "done": False})
+    return _finish_turn(request, data, history, result)
+
+
+@require_http_methods(["POST"])
+def chat_upload(request):
+    data = _get_data(request)
+    history = _history(request)
+    doc_type_hint = request.POST.get("docType", "")
+    files = request.FILES.getlist("document")
+    if not files:
+        return JsonResponse({"error": "no file"}, status=400)
+
+    uploads = [(f.read(), f.content_type or "application/octet-stream") for f in files]
+    try:
+        result = gemini.extract_document(uploads, doc_type_hint)
+    except (gemini.GeminiUnavailable, gemini.GeminiError):
+        msg = ("I couldn’t read that one — no problem, let’s just do it by chat. "
+               "Could you tell me what you know about your plan?")
+        history.append({"role": "model", "text": msg})
+        request.session["history"] = history
+        request.session.modified = True
+        return JsonResponse({"messages": [{"role": "bot", "text": msg}], "filled": []})
+
+    filled = schema.merge_extraction(data, result["fields"], result["documentType"],
+                                     result.get("evidence"))
+    _touch_source(request, data)
+
+    doc_label = result["documentType"] if result["documentType"] in ("SBC", "EOB") else "document"
+    if filled:
+        summary_bits = ", ".join(f"{p.split('.')[-1]} = {schema.get_path(data, p)}"
+                                 for p in filled)
+        note = (f"[The member uploaded their {doc_label}. It filled these fields: "
+                f"{summary_bits}. Acknowledge what you read, then continue collecting "
+                f"whatever is still missing.]")
+    else:
+        note = (f"[The member uploaded a {doc_label} but nothing could be read from it. "
+                f"Reassure them and continue by asking for the details in chat.]")
+
+    history.append({"role": "user", "text": note})
+    try:
+        turn = chat.respond(history, data)
+    except chat.ChatUnavailable:
+        reply = (f"Thanks — I read your {doc_label} and filled in what I could. "
+                 "Let’s keep going.")
+        turn = {"reply": reply, "updates": {}, "unsure": [], "phase": "collecting"}
+
+    resp = _finish_turn(request, data, history, turn)
+    payload = json.loads(resp.content)
+    payload["filled"] = filled
+    return JsonResponse(payload)
