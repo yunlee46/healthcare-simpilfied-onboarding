@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Emme · Plan Onboarding</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --coral:#D46A4E;         /* Emme brand terracotta */
+  --coral-dark:#B9552F;
+  --coral-soft:#F6E7DE;
+  --ink:#2B2320;           /* warm near-black */
+  --muted:#8A7B70;
+  --paper:#FBF6EF;         /* warm sand */
+  --card:#FFFFFF;
+  --line:#EDE3D8;
+  --fill:#F3EAE0;
+  --forest:#4A7A62;        /* trust / success accent */
+  --forest-soft:#E5EFE8;
+  --shadow:0 10px 40px rgba(43,35,32,.08);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{
+  font-family:'Inter',system-ui,sans-serif;
+  color:var(--ink);
+  background:var(--paper);
+  display:flex;justify-content:center;
+  line-height:1.5;
+}
+.phone{
+  width:100%;max-width:440px;min-height:100vh;
+  background:var(--paper);
+  display:flex;flex-direction:column;
+  position:relative;
+}
+/* top bar */
+.top{padding:16px 22px 10px;display:flex;align-items:center;gap:12px}
+.logo{font-family:'Fraunces';font-weight:600;letter-spacing:.14em;font-size:19px;color:var(--coral)}
+.savepill{margin-left:auto;font-size:12px;color:var(--forest);display:flex;align-items:center;gap:5px;opacity:0;transition:.3s}
+.savepill.show{opacity:1}
+.savepill::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--forest)}
+/* progress */
+.progwrap{padding:0 22px 6px}
+.progbar{height:6px;border-radius:6px;background:var(--fill);overflow:hidden}
+.progfill{height:100%;background:linear-gradient(90deg,var(--coral),#E48A6E);border-radius:6px;width:0;transition:width .45s cubic-bezier(.4,0,.2,1)}
+.proglabel{font-size:11.5px;color:var(--muted);margin-top:7px;letter-spacing:.02em;text-transform:uppercase}
+/* stage */
+.stage{flex:1;padding:14px 22px 120px;display:flex;flex-direction:column;justify-content:flex-start}
+.eyebrow{font-size:12px;color:var(--coral);font-weight:600;letter-spacing:.06em;text-transform:uppercase;margin-bottom:12px}
+.q{font-family:'Fraunces';font-size:27px;line-height:1.22;font-weight:500;margin-bottom:10px;letter-spacing:-.01em}
+.why{font-size:14.5px;color:var(--muted);margin-bottom:22px;max-width:34ch}
+.frombadge{display:inline-flex;align-items:center;gap:6px;background:var(--forest-soft);color:var(--forest);font-size:11.5px;font-weight:600;padding:5px 10px;border-radius:20px;margin-bottom:16px}
+.frombadge::before{content:"✓"}
+/* inputs */
+.fld{width:100%;font-family:inherit;font-size:17px;color:var(--ink);background:var(--card);border:1.5px solid var(--line);border-radius:14px;padding:16px 16px;outline:none;transition:.18s}
+.fld:focus{border-color:var(--coral);box-shadow:0 0 0 4px var(--coral-soft)}
+.moneywrap{position:relative}
+.moneywrap::before{content:"$";position:absolute;left:16px;top:50%;transform:translateY(-50%);font-size:17px;color:var(--muted);font-weight:500}
+.moneywrap .fld{padding-left:32px}
+.chips{display:flex;flex-wrap:wrap;gap:10px}
+.chip{font-family:inherit;font-size:15px;font-weight:500;color:var(--ink);background:var(--card);border:1.5px solid var(--line);border-radius:14px;padding:13px 17px;cursor:pointer;transition:.15s;flex:0 0 auto}
+.chip:hover{border-color:var(--coral)}
+.chip.sel{background:var(--coral);border-color:var(--coral);color:#fff}
+.chip small{display:block;font-size:11.5px;font-weight:400;opacity:.7;margin-top:2px}
+.chip.sel small{opacity:.85}
+.hint{font-size:13px;color:var(--forest);margin-top:14px;background:var(--forest-soft);padding:11px 13px;border-radius:11px;display:none}
+.hint.show{display:block}
+.skip{background:none;border:none;color:var(--muted);font-family:inherit;font-size:14px;text-decoration:underline;cursor:pointer;margin-top:18px;padding:6px 0}
+/* upload */
+.uploadbtns{display:flex;flex-direction:column;gap:12px}
+.ubtn{display:flex;align-items:center;gap:14px;background:var(--card);border:1.5px solid var(--line);border-radius:16px;padding:18px;cursor:pointer;transition:.15s;text-align:left;font-family:inherit;width:100%}
+.ubtn:hover{border-color:var(--coral);transform:translateY(-1px)}
+.ubtn .ic{width:44px;height:44px;border-radius:12px;background:var(--coral-soft);display:flex;align-items:center;justify-content:center;font-size:21px;flex:0 0 auto}
+.ubtn .t{font-size:16px;font-weight:600}
+.ubtn .s{font-size:13px;color:var(--muted)}
+.reading{text-align:center;padding:40px 0}
+.spinner{width:44px;height:44px;border:3px solid var(--coral-soft);border-top-color:var(--coral);border-radius:50%;margin:0 auto 18px;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+/* bottom */
+.bottom{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:440px;padding:14px 22px 22px;background:linear-gradient(180deg,rgba(251,246,239,0),var(--paper) 32%);display:flex;gap:12px}
+.btn{flex:1;font-family:inherit;font-size:16px;font-weight:600;padding:16px;border-radius:15px;border:none;cursor:pointer;transition:.15s}
+.btn-primary{background:var(--coral);color:#fff}
+.btn-primary:hover{background:var(--coral-dark)}
+.btn-primary:disabled{background:var(--line);color:var(--muted);cursor:not-allowed}
+.btn-ghost{flex:0 0 auto;background:none;color:var(--muted);border:1.5px solid var(--line);padding:16px 20px}
+/* summary */
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:20px;box-shadow:var(--shadow);margin-bottom:16px}
+.sumtitle{font-family:'Fraunces';font-size:25px;font-weight:500;margin-bottom:4px}
+.sumsub{font-size:14px;color:var(--muted);margin-bottom:20px}
+.ready{display:flex;align-items:center;gap:8px;background:var(--forest-soft);color:var(--forest);font-weight:600;font-size:14px;padding:12px 15px;border-radius:12px;margin-bottom:18px}
+.row{display:flex;justify-content:space-between;padding:11px 0;border-bottom:1px solid var(--line);font-size:15px}
+.row:last-child{border:none}
+.row .k{color:var(--muted)}
+.row .v{font-weight:600;text-align:right}
+.row .v.miss{color:var(--coral);font-weight:500;font-style:italic}
+.miniprog{height:8px;background:var(--fill);border-radius:8px;overflow:hidden;margin-top:6px}
+.miniprog>div{height:100%;background:var(--forest);border-radius:8px}
+.jsonbtns{display:flex;gap:10px;margin-top:4px}
+.jbtn{flex:1;font-family:inherit;font-size:14px;font-weight:600;padding:13px;border-radius:12px;border:1.5px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer}
+.jbtn.solid{background:var(--forest);color:#fff;border-color:var(--forest)}
+pre{background:#241d1a;color:#f0e6dc;padding:16px;border-radius:14px;font-size:12px;overflow:auto;max-height:340px;font-family:ui-monospace,monospace;line-height:1.5;white-space:pre-wrap;word-break:break-word}
+.toast{position:fixed;bottom:96px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:11px 18px;border-radius:30px;font-size:13px;opacity:0;transition:.3s;pointer-events:none;z-index:9}
+.toast.show{opacity:1}
+.fade{animation:fade .35s ease}
+@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="top">
+    <div class="logo">EMME</div>
+    <div class="savepill" id="savepill">Saved</div>
+  </div>
+  <div class="progwrap">
+    <div class="progbar"><div class="progfill" id="progfill"></div></div>
+    <div class="proglabel" id="proglabel">Getting started</div>
+  </div>
+  <div class="stage" id="stage"></div>
+  <div class="bottom" id="bottom"></div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+   EMME ONBOARDING — reference prototype
+   Fully working: manual flow, autosave, summary, JSON export.
+   Upload extraction is a SIMULATED stub (see extract()).
+   In production, replace extract() with a call to your Django
+   endpoint POST /api/extract -> Gemini vision -> returns JSON.
+   ============================================================ */
+
+const CARRIERS = ["Aetna","Anthem","Blue Cross Blue Shield","Cigna","Humana","Kaiser Permanente","Molina","Oscar","UnitedHealthcare","Other"];
+
+/* ---- state ---- */
+let S = load() || {
+  name:"", path:"", fromDoc:[],
+  email:"", zip:"",
+  size:"", income:"", filing:"",
+  carrier:"", planName:"", tier:"", planType:"",
+  dedInd:"", dedFam:"", dedMet:"", oopMax:"", oopMet:"",
+  pcp:"", spec:"", coins:"", premium:"",
+  hsaElig:"", hsaBal:"", hsaYtd:"", hsaEmp:"",
+  rxSkipped:false, rx:[],
+  procedures:"", conditions:"", pregnancy:"", behavioral:"",
+  ci:0
+};
+
+/* ---- step definitions (data-driven) ---- */
+const STEPS = [
+  {id:"name",  sec:"You",   type:"text",  q:"Hi! What should we call you?", ph:"First name", why:"So this feels a little less like a form."},
+  {id:"path",  sec:"You",   type:"path",  q:"Want to upload your plan documents, or just answer a few questions?", why:"Your SBC is your plan's rulebook. Your EOB shows what you've spent this year. No documents handy? Totally fine."},
+  {id:"email", sec:"You",   type:"email", q:"Where should we send your cost estimate?", ph:"you@email.com", why:"We'll only use this for your results."},
+  {id:"zip",   sec:"You",   type:"zip",   q:"What's your ZIP code?", ph:"e.g. 02139", why:"Prices and networks are regional — this keeps your estimate accurate."},
+  {id:"size",  sec:"You",   type:"chips", q:"How many people are on your plan, including you?", why:"Family deductibles work differently from individual ones.", opts:["1","2","3","4","5+"]},
+  {id:"income",sec:"You",   type:"chips", q:"Which range fits your household income?", why:"Helps us estimate what you'll actually pay after any savings.", opts:["Under $30k","$30k–60k","$60k–100k","$100k–150k","$150k+","Prefer not to say"]},
+  {id:"filing",sec:"You",   type:"chips", q:"How do you file your taxes?", why:"It can affect the savings you qualify for.", opts:["Single","Married, jointly","Married, separately","Head of household"]},
+
+  {id:"carrier",sec:"Plan", type:"carrier",q:"Who's your insurance through?", ph:"Start typing your insurer", why:"We'll pull the right plan details for them."},
+  {id:"planName",sec:"Plan",type:"text",  q:"What's your plan called?", ph:"e.g. Silver PPO 2000", why:"It's near the top of your SBC. Not sure? Skip it.", optional:true},
+  {id:"tier",  sec:"Plan",  type:"chips", q:"Do you know your plan's metal tier?", why:"It's a quick shorthand for how costs are split.", opts:["Bronze","Silver","Gold","Platinum","Not sure"]},
+  {id:"planType",sec:"Plan",type:"chips", q:"What type of plan is it?", why:"This shapes which doctors and costs apply.", opts:[
+      {v:"HMO",s:"Stay in-network"},{v:"PPO",s:"More flexibility"},{v:"EPO",s:"In-network only, no referrals"},{v:"HDHP",s:"High deductible, HSA-eligible"},{v:"Not sure",s:""}]},
+
+  {id:"dedInd",sec:"Costs", type:"money", q:"What's your deductible for one person?", why:"What you pay before insurance starts covering costs.", allowUnsure:true},
+  {id:"dedFam",sec:"Costs", type:"money", q:"And the deductible for your whole family?", why:"The total your household pays before full coverage kicks in.", showIf:s=>s.size&&s.size!=="1", allowUnsure:true},
+  {id:"dedMet",sec:"Costs", type:"money", q:"How much of your deductible have you already paid this year?", why:"Start at $0 if you're not sure — you can always update it.", allowUnsure:true},
+  {id:"oopMax",sec:"Costs", type:"money", q:"What's the most you'd pay in a whole year?", why:"Your out-of-pocket max — the ceiling on your yearly costs.", allowUnsure:true},
+  {id:"oopMet",sec:"Costs", type:"money", q:"How much of that have you hit this year?", why:"Roughly what you've spent so far. A guess is fine.", allowUnsure:true},
+  {id:"pcp",   sec:"Costs", type:"chips", q:"Typical copay for a regular doctor visit?", why:"The flat fee you pay to see your primary doctor.", opts:["$0","$25","$50","$75+","Not sure"]},
+  {id:"spec",  sec:"Costs", type:"chips", q:"And for a specialist visit?", why:"Specialists often cost a bit more than regular visits.", opts:["$0","$40","$60","$90+","Not sure"]},
+  {id:"coins", sec:"Costs", type:"chips", q:"After your deductible, what share of costs do you pay?", why:"Your part of the bill once your deductible is met.", opts:["0%","10%","20%","30%","40%","Not sure"]},
+  {id:"premium",sec:"Costs",type:"money", q:"Roughly what do you pay each month?", why:"Your monthly premium — what leaves your account for the plan itself.", allowUnsure:true},
+
+  {id:"hsaElig",sec:"Extras",type:"chips",q:"Do you have a health savings account (HSA)?", why:"HDHP plans come with a tax-friendly HSA. We can factor it in.", opts:["Yes","No","Not sure"], showIf:s=>s.planType==="HDHP"||s.planType==="Not sure"||s.planType===""},
+  {id:"hsaBal",sec:"Extras", type:"money", q:"About how much is in your HSA?", why:"A rough number is fine.", showIf:s=>s.hsaElig==="Yes", optional:true, allowUnsure:true},
+
+  {id:"rx",    sec:"Extras", type:"rx",    q:"Any medications you take regularly?", why:"We'll price these so there are no surprises at the pharmacy."},
+
+  {id:"procedures",sec:"Extras",type:"textarea",q:"Any care coming up you're thinking about?", ph:"e.g. MRI, knee surgery, dental — or leave blank", why:"So we can shop for the best price before you go.", optional:true},
+  {id:"conditions",sec:"Extras",type:"textarea",q:"Any ongoing conditions we should keep in mind?", ph:"Optional — helps us tailor your plan", why:"This helps us match you to the right coverage. Skip if you'd rather not.", optional:true},
+  {id:"pregnancy",sec:"Extras",type:"chips",q:"Are you expecting, or planning to be, this year?", why:"Maternity care changes the math a lot — worth planning for.", opts:["Yes","No","Prefer not to say"]},
+  {id:"behavioral",sec:"Extras",type:"chips",q:"Would mental health or therapy coverage matter to you?", why:"We'll make sure it's covered well. Always your choice to share.", opts:["Yes","No","Prefer not to say"]},
+
+  {id:"summary",sec:"Done",  type:"summary"}
+];
+
+const SECTIONS=["You","Plan","Costs","Extras","Done"];
+
+/* ---- helpers ---- */
+function save(){ try{localStorage.setItem("emme",JSON.stringify(S));}catch(e){} flashSave(); }
+function load(){ try{return JSON.parse(localStorage.getItem("emme"));}catch(e){return null;} }
+function flashSave(){ const p=document.getElementById("savepill"); p.classList.add("show"); clearTimeout(window._st); window._st=setTimeout(()=>p.classList.remove("show"),1400); }
+function toast(m){ const t=document.getElementById("toast"); t.textContent=m; t.classList.add("show"); setTimeout(()=>t.classList.remove("show"),1600); }
+function visibleSteps(){ return STEPS.filter(st=>!st.showIf||st.showIf(S)); }
+
+/* ---- render engine ---- */
+function render(){
+  const vis=visibleSteps();
+  if(S.ci>=vis.length) S.ci=vis.length-1;
+  const step=vis[S.ci];
+  const stage=document.getElementById("stage");
+  const bottom=document.getElementById("bottom");
+
+  // progress
+  const secIdx=SECTIONS.indexOf(step.sec);
+  const pct=step.type==="summary"?100:Math.round(((S.ci)/(vis.length-1))*100);
+  document.getElementById("progfill").style.width=pct+"%";
+  document.getElementById("proglabel").textContent=step.type==="summary"?"All done":SECTIONS[secIdx].toUpperCase();
+
+  stage.className="stage fade";
+  void stage.offsetWidth;
+  stage.innerHTML="";
+  bottom.innerHTML="";
+
+  if(step.type==="summary"){ renderSummary(stage,bottom); return; }
+
+  // eyebrow (personal touch once we have a name)
+  if(S.name && step.id!=="name"){
+    const e=document.createElement("div"); e.className="eyebrow"; e.textContent=step.sec==="Done"?"":`Thanks, ${S.name}`; stage.appendChild(e);
+  }
+
+  const fromDoc=S.fromDoc.includes(step.id);
+  if(fromDoc){ const b=document.createElement("div"); b.className="frombadge"; b.textContent="From your document — tap to fix"; stage.appendChild(b); }
+
+  const q=document.createElement("div"); q.className="q"; q.textContent=step.q; stage.appendChild(q);
+  if(step.why){ const w=document.createElement("div"); w.className="why"; w.textContent=step.why; stage.appendChild(w); }
+
+  renderInput(step,stage);
+
+  // bottom buttons
+  if(S.ci>0){ const b=document.createElement("button"); b.className="btn btn-ghost"; b.textContent="Back"; b.onclick=()=>{S.ci--;save();render();}; bottom.appendChild(b); }
+  const next=document.createElement("button"); next.className="btn btn-primary"; next.id="nextbtn";
+  next.textContent=step.type==="rx"?"Continue":"Continue";
+  next.onclick=()=>advance(step); bottom.appendChild(next);
+  refreshNext(step);
+}
+
+function renderInput(step,stage){
+  const val=S[step.id];
+  if(["text","email","zip"].includes(step.type)){
+    const i=document.createElement("input"); i.className="fld"; i.value=val||""; i.placeholder=step.ph||"";
+    i.type=step.type==="email"?"email":"text";
+    if(step.type==="zip"){i.inputMode="numeric";i.maxLength=5;}
+    i.oninput=e=>{S[step.id]=e.target.value;refreshNext(step);save();};
+    if(step.id==="name"||step.type==="email"||step.type==="zip") i.onkeydown=e=>{if(e.key==="Enter")advance(step);};
+    stage.appendChild(i); setTimeout(()=>i.focus(),120);
+  }
+  else if(step.type==="money"){
+    const wrap=document.createElement("div"); wrap.className="moneywrap";
+    const i=document.createElement("input"); i.className="fld"; i.inputMode="decimal"; i.placeholder="0";
+    i.value=(val&&val!=="unknown")?val:"";
+    i.oninput=e=>{S[step.id]=e.target.value.replace(/[^0-9.]/g,"");refreshNext(step);save();};
+    i.onkeydown=e=>{if(e.key==="Enter")advance(step);};
+    wrap.appendChild(i); stage.appendChild(wrap);
+    if(step.allowUnsure){ const s=document.createElement("button"); s.className="skip"; s.textContent="I'm not sure"; s.onclick=()=>{S[step.id]="unknown";save();nextStep();}; stage.appendChild(s); }
+    setTimeout(()=>i.focus(),120);
+  }
+  else if(step.type==="textarea"){
+    const t=document.createElement("textarea"); t.className="fld"; t.rows=3; t.placeholder=step.ph||""; t.value=val||"";
+    t.oninput=e=>{S[step.id]=e.target.value;save();};
+    stage.appendChild(t); setTimeout(()=>t.focus(),120);
+  }
+  else if(step.type==="chips"){
+    const c=document.createElement("div"); c.className="chips";
+    step.opts.forEach(o=>{
+      const label=typeof o==="string"?o:o.v, sub=typeof o==="string"?"":o.s;
+      const chip=document.createElement("button"); chip.className="chip"+(val===label?" sel":"");
+      chip.innerHTML=label+(sub?`<small>${sub}</small>`:"");
+      chip.onclick=()=>{S[step.id]=label;save();setTimeout(nextStep,180);};
+      c.appendChild(chip);
+    });
+    stage.appendChild(c);
+  }
+  else if(step.type==="carrier"){
+    const i=document.createElement("input"); i.className="fld"; i.value=val||""; i.placeholder=step.ph; i.setAttribute("list","carrierlist");
+    const dl=document.createElement("datalist"); dl.id="carrierlist";
+    CARRIERS.forEach(c=>{const o=document.createElement("option");o.value=c;dl.appendChild(o);});
+    const hint=document.createElement("div"); hint.className="hint";
+    i.oninput=e=>{
+      S[step.id]=e.target.value; refreshNext(step); save();
+      const guess=fuzzyCarrier(e.target.value);
+      if(guess && guess.toLowerCase()!==e.target.value.toLowerCase()){ hint.textContent=`Did you mean ${guess}?`; hint.classList.add("show"); hint.onclick=()=>{S[step.id]=guess;i.value=guess;hint.classList.remove("show");refreshNext(step);save();}; }
+      else hint.classList.remove("show");
+    };
+    i.onkeydown=e=>{if(e.key==="Enter")advance(step);};
+    stage.appendChild(i); stage.appendChild(dl); stage.appendChild(hint); setTimeout(()=>i.focus(),120);
+  }
+  else if(step.type==="path"){
+    const wrap=document.createElement("div"); wrap.className="uploadbtns";
+    const up=mkUbtn("📄","Upload or snap my documents","SBC or EOB — photo, file, or camera",()=>startUpload());
+    const man=mkUbtn("✍️","I'll answer a few questions","Takes about 2 minutes",()=>{S.path="manual";save();nextStep();});
+    wrap.appendChild(up); wrap.appendChild(man); stage.appendChild(wrap);
+    const help=document.createElement("button"); help.className="skip"; help.textContent="Can't find your documents? Here's where to look";
+    help.onclick=()=>toast("They're usually in your insurer's app under 'Documents' or 'Plan materials'.");
+    stage.appendChild(help);
+  }
+  else if(step.type==="rx"){
+    const list=document.createElement("div");
+    function draw(){
+      list.innerHTML="";
+      S.rx.forEach((m,idx)=>{
+        const card=document.createElement("div"); card.className="card"; card.style.padding="14px"; card.style.marginBottom="10px";
+        card.innerHTML=`<div style="font-weight:600">${m.drugName||"Medication"}</div><div style="font-size:13px;color:var(--muted)">${[m.dosage,m.frequency,m.paymentMethod].filter(Boolean).join(" · ")||"Tap to edit"}</div>`;
+        const del=document.createElement("button"); del.className="skip"; del.style.margin="6px 0 0"; del.textContent="Remove";
+        del.onclick=()=>{S.rx.splice(idx,1);save();draw();}; card.appendChild(del); list.appendChild(card);
+      });
+    }
+    draw(); stage.appendChild(list);
+    const add=document.createElement("button"); add.className="ubtn"; add.style.marginBottom="10px";
+    add.innerHTML='<div class="ic">＋</div><div><div class="t">Add a medication</div><div class="s">Name, dosage, how often</div></div>';
+    add.onclick=()=>{ const name=prompt("Medication name?"); if(!name)return; const dose=prompt("Dosage? (optional)")||""; S.rx.push({drugName:name,dosage:dose,frequency:"",paymentMethod:"Insurance",preferredPharmacy:""}); S.rxSkipped=false; save(); draw(); };
+    stage.appendChild(add);
+    const none=document.createElement("button"); none.className="skip"; none.textContent="Skip — none right now";
+    none.onclick=()=>{S.rxSkipped=true;save();nextStep();}; stage.appendChild(none);
+  }
+}
+
+function mkUbtn(icon,t,s,fn){ const b=document.createElement("button"); b.className="ubtn"; b.innerHTML=`<div class="ic">${icon}</div><div><div class="t">${t}</div><div class="s">${s}</div></div>`; b.onclick=fn; return b; }
+
+function fuzzyCarrier(v){ v=v.trim().toLowerCase(); if(!v)return null;
+  if(v.includes("blue")||v.includes("bcbs")||v.includes("cross")) return "Blue Cross Blue Shield";
+  if(v.startsWith("unit")||v.includes("uhc")) return "UnitedHealthcare";
+  if(v.startsWith("kais")) return "Kaiser Permanente";
+  const m=CARRIERS.find(c=>c.toLowerCase().startsWith(v)); return m||null;
+}
+
+/* ---- validation / advance ---- */
+function isValid(step){
+  const v=S[step.id];
+  if(step.optional) return true;
+  switch(step.type){
+    case "text": return step.id==="name"? !!(v&&v.trim()) : true;
+    case "email": return /.+@.+\..+/.test(v||"");
+    case "zip": return /^\d{5}$/.test(v||"");
+    case "money": return !!(v&&v!=="");
+    case "carrier": return !!(v&&v.trim());
+    default: return true;
+  }
+}
+function refreshNext(step){ const b=document.getElementById("nextbtn"); if(!b)return; b.disabled=!isValid(step); }
+function advance(step){ if(!isValid(step)) return; save(); nextStep(); }
+function nextStep(){ const vis=visibleSteps(); if(S.ci<vis.length-1){S.ci++;save();render();} }
+
+/* ---- upload + SIMULATED extraction ---- */
+function startUpload(){
+  S.path="upload";
+  const inp=document.createElement("input"); inp.type="file"; inp.accept="image/*,application/pdf"; inp.capture="environment";
+  inp.onchange=()=>{ showReading(); setTimeout(()=>{ const data=extract(); applyExtract(data); },1600); };
+  inp.click();
+}
+function showReading(){
+  const stage=document.getElementById("stage"); const bottom=document.getElementById("bottom");
+  bottom.innerHTML="";
+  stage.innerHTML='<div class="reading"><div class="spinner"></div><div class="q" style="font-size:22px">Reading your document…</div><div class="why" style="margin:8px auto 0;text-align:center">Pulling out what we can. You\'ll confirm everything next.</div></div>';
+}
+/* ⬇⬇⬇ REPLACE THIS with a real call to your Django /api/extract (Gemini vision). ⬇⬇⬇
+   On an EOB: "deductible applied to date" = dedMet (NOT dedInd);
+              "OOP applied to date" = oopMet (NOT oopMax).
+   Do NOT infer total deductible, OOP max, copays, coinsurance,
+   premium, tier, or plan type from an EOB — those live on the SBC. */
+function extract(){
+  return { // sample values as if parsed from a Blue Cross SBC + EOB
+    carrier:"Blue Cross Blue Shield", planName:"Silver PPO 2000", tier:"Silver", planType:"PPO",
+    dedInd:"2000", dedFam:"4000", dedMet:"500", oopMax:"7000", oopMet:"524",
+    pcp:"$25", coins:"20%", premium:"420",
+    _fields:["carrier","planName","tier","planType","dedInd","dedFam","dedMet","oopMax","oopMet","pcp","coins","premium"]
+  };
+}
+function applyExtract(d){
+  d._fields.forEach(f=>{ if(d[f]!==undefined){ S[f]=d[f]; if(!S.fromDoc.includes(f)) S.fromDoc.push(f); } });
+  save(); toast("Got it — filled in what we could read");
+  // jump to first step after path so the user confirms pre-filled values
+  const vis=visibleSteps(); S.ci=vis.findIndex(s=>s.id==="email"); if(S.ci<0)S.ci=1;
+  render();
+}
+
+/* ---- summary + JSON ---- */
+function buildJSON(){
+  const num=v=>(v==="unknown"||v===""||v==null)?null:isNaN(Number(v))?v:Number(v);
+  const money=v=>(v==="unknown"||v===""||v==null)?null:Number(v);
+  const pct=v=>v&&v!=="Not sure"?Number(String(v).replace("%",""))/100:null;
+  const copay=v=>v&&v!=="Not sure"?Number(String(v).replace(/[^0-9]/g,""))||0:null;
+  const unknown=[];
+  ["dedInd","dedFam","dedMet","oopMax","oopMet","premium"].forEach(f=>{if(S[f]==="unknown")unknown.push(f);});
+  ["tier","planType","pcp","spec","coins"].forEach(f=>{if(S[f]==="Not sure")unknown.push(f);});
+  return {
+    identity:{ name:S.name||null, email:S.email||null, zipCode:S.zip||null },
+    household:{ size:S.size?(S.size==="5+"?5:Number(S.size)):null, incomeRange:S.income||null, filingStatus:S.filing||null },
+    plan:{ carrier:S.carrier||null, planName:S.planName||null, metalTier:(S.tier&&S.tier!=="Not sure")?S.tier:null, planType:(S.planType&&S.planType!=="Not sure")?S.planType:null },
+    costSharing:{ deductibleIndividual:money(S.dedInd), deductibleFamily:money(S.dedFam), deductibleMetYTD:money(S.dedMet),
+      oopMaxIndividual:money(S.oopMax), oopMetYTD:money(S.oopMet),
+      pcpCopay:copay(S.pcp), specialistCopay:copay(S.spec), coinsurancePct:pct(S.coins), monthlyPremium:money(S.premium) },
+    hsa:{ eligible:S.hsaElig==="Yes"?true:(S.hsaElig==="No"?false:null), currentBalance:money(S.hsaBal), ytdContributions:null, employerContribution:null },
+    prescriptions:S.rxSkipped?[]:S.rx,
+    upcomingCare:{ plannedProcedures:S.procedures?[S.procedures]:[], chronicConditions:S.conditions?[S.conditions]:[],
+      pregnancy:S.pregnancy==="Yes"?true:(S.pregnancy==="No"?false:null),
+      behavioralHealthNeeds:S.behavioral==="Yes"?true:(S.behavioral==="No"?false:null) },
+    meta:{ completedAt:new Date().toISOString(), source:S.fromDoc.length?(S.path==="upload"?"mixed":"manual"):"manual", fieldsFromDocument:S.fromDoc, unknownFields:unknown }
+  };
+}
+function renderSummary(stage,bottom){
+  const j=buildJSON();
+  document.getElementById("proglabel").textContent="ALL DONE";
+  const dedTotal=j.costSharing.deductibleIndividual, dedMet=j.costSharing.deductibleMetYTD;
+  const dpct=(dedTotal&&dedMet!=null)?Math.min(100,Math.round(dedMet/dedTotal*100)):0;
+  const missing=j.meta.unknownFields.length;
+  const c=document.createElement("div"); c.className="card";
+  c.innerHTML=`
+    <div class="sumtitle">Here's what we know, ${S.name||"friend"}.</div>
+    <div class="sumsub">Review anything below, or send it to your estimate.</div>
+    <div class="ready">${missing?`⚑ A few things left to make this precise`:`✓ Ready to estimate your costs`}</div>
+    ${row("Carrier",j.plan.carrier)}
+    ${row("Plan",[j.plan.metalTier,j.plan.planType].filter(Boolean).join(" ")||null)}
+    ${row("Deductible",j.costSharing.deductibleIndividual!=null?"$"+j.costSharing.deductibleIndividual.toLocaleString():null)}
+    ${row("Out-of-pocket max",j.costSharing.oopMaxIndividual!=null?"$"+j.costSharing.oopMaxIndividual.toLocaleString():null)}
+    ${row("Monthly premium",j.costSharing.monthlyPremium!=null?"$"+j.costSharing.monthlyPremium.toLocaleString():null)}
+    <div style="margin-top:14px;font-size:13px;color:var(--muted)">Deductible progress this year</div>
+    <div class="miniprog"><div style="width:${dpct}%"></div></div>
+    <div style="font-size:12px;color:var(--muted);margin-top:5px">${dedMet!=null&&dedTotal?`$${dedMet.toLocaleString()} of $${dedTotal.toLocaleString()}`:"—"}</div>
+  `;
+  stage.appendChild(c);
+  const jc=document.createElement("div"); jc.className="card"; jc.style.padding="16px";
+  jc.innerHTML=`<div style="font-weight:600;margin-bottom:4px">Structured output</div><div style="font-size:13px;color:var(--muted);margin-bottom:12px">The clean JSON that feeds Emme's pricing engine.</div>`;
+  const btns=document.createElement("div"); btns.className="jsonbtns";
+  const view=document.createElement("button"); view.className="jbtn"; view.textContent="View JSON";
+  const copy=document.createElement("button"); copy.className="jbtn"; copy.textContent="Copy";
+  const dl=document.createElement("button"); dl.className="jbtn solid"; dl.textContent="Download";
+  const pre=document.createElement("pre"); pre.style.display="none"; pre.textContent=JSON.stringify(j,null,2);
+  view.onclick=()=>{pre.style.display=pre.style.display==="none"?"block":"none";};
+  copy.onclick=()=>{navigator.clipboard.writeText(JSON.stringify(j,null,2));toast("JSON copied");};
+  dl.onclick=()=>{const b=new Blob([JSON.stringify(j,null,2)],{type:"application/json"});const u=URL.createObjectURL(b);const a=document.createElement("a");a.href=u;a.download="emme_plan.json";a.click();};
+  btns.appendChild(view); btns.appendChild(copy); btns.appendChild(dl);
+  jc.appendChild(btns); jc.appendChild(pre); stage.appendChild(jc);
+
+  const restart=document.createElement("button"); restart.className="btn btn-ghost"; restart.style.flex="1"; restart.textContent="Start over";
+  restart.onclick=()=>{try{localStorage.removeItem("emme")}catch(e){}; location.reload();};
+  bottom.appendChild(restart);
+}
+function row(k,v){ return `<div class="row"><span class="k">${k}</span><span class="v ${v?"":"miss"}">${v||"Add this"}</span></div>`; }
+
+render();
+</script>
+</body>
+</html>
