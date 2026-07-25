@@ -1,21 +1,18 @@
 {% extends 'onboarding/base.html' %}
 {% block content %}
 <div class="card">
-  <h1>{% if name %}Nice to meet you, {{ name }}.{% endif %} How would you like to start?</h1>
-  <p class="sub">Do you want to upload your EOB and SBC from photos/files, or fill in
-    your information manually?</p>
+  <h1>{% if name %}Nice to meet you, {{ name }}. {% endif %}Let's start with your documents.</h1>
+  <p class="sub">Upload your SBC or a recent EOB — I'll read what I can and only ask
+    you about the rest. A photo works fine.</p>
 
-  <a class="option" href="{% url 'upload' %}">
-    <span class="option-title">📄 Upload my documents</span>
-    <span class="option-desc">Snap a photo or pick a file of your SBC or EOB</span>
-  </a>
-  <a class="option" href="{% url 'manual_start' %}">
-    <span class="option-title">✍️ Fill it in manually</span>
-    <span class="option-desc">I’ll answer a few quick questions</span>
+  <a class="option hero" href="{% url 'upload' %}">
+    <span class="option-title">📄 Upload or snap a document</span>
+    <span class="option-desc">Your SBC or EOB — file, photo, or camera</span>
   </a>
 
-  <p class="helper">The <strong>SBC</strong> is your plan’s rulebook (deductibles,
-    copays). The <strong>EOB</strong> shows what you’ve already spent this year.
-    Don’t have them? No problem — you can do it by hand.</p>
+  <p class="helper">The <strong>SBC</strong> is your plan's rulebook (deductibles,
+    copays). The <strong>EOB</strong> shows what you've already spent this year.</p>
+
+  <a class="secondary-link" href="{% url 'manual_start' %}">I don't have anything handy →</a>
 </div>
 {% endblock %}

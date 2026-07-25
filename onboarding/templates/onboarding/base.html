@@ -11,6 +11,10 @@
     <header class="topbar">
       <a class="brand" href="{% url 'welcome' %}">emme</a>
       {% block progress %}{% endblock %}
+      {% if show_attach %}
+      <a class="attach" href="{% url 'upload' %}?next={{ request.path|urlencode }}"
+         title="Attach a document" aria-label="Attach a document">📎</a>
+      {% endif %}
     </header>
     <main class="screen">
       {% if flash %}<div class="flash">{{ flash }}</div>{% endif %}

@@ -45,8 +45,31 @@ def empty_schema() -> dict:
             "source": "manual",
             "fieldsFromDocument": [],
             "unknownFields": [],
+            # Per-field provenance for the pricing engine: dotted path ->
+            # {source, confidence, snippet, raw, member_confirmed}.
+            "sources": {},
         },
     }
+
+
+# Provenance sources, most→least authoritative for display grouping.
+SOURCES = ("sbc", "eob", "card", "manual", "inferred", "assumed", "unknown", "not_applicable")
+
+
+def set_source(data: dict, dotted: str, source: str,
+               confidence=None, snippet=None, raw=None, member_confirmed=False) -> None:
+    srcs = data.setdefault("meta", {}).setdefault("sources", {})
+    srcs[dotted] = {
+        "source": source,
+        "confidence": confidence,
+        "snippet": snippet,
+        "raw": raw,
+        "member_confirmed": member_confirmed,
+    }
+
+
+def get_source(data: dict, dotted: str) -> dict | None:
+    return data.get("meta", {}).get("sources", {}).get(dotted)
 
 
 def get_path(data: dict, dotted: str) -> Any:
@@ -101,28 +124,32 @@ _EOB_FIELDS = {
 }
 
 
-def merge_extraction(data: dict, partial: dict, doc_type: str) -> list[str]:
+def merge_extraction(data: dict, partial: dict, doc_type: str,
+                     evidence: dict | None = None) -> list[str]:
     """Merge a flattened {dotted_path: value} extraction into ``data``.
 
-    Applies the doc-merge rule: for a field that both docs can carry, the
-    authoritative doc for that field is allowed to overwrite; otherwise we only
-    fill blanks. Returns the list of paths that were populated.
+    Fill-blanks-only: an upload only fills fields the member hasn't answered
+    yet — it never overwrites a value they typed (a genuine conflict is a soft
+    challenge, handled elsewhere, not a silent overwrite). Records provenance
+    (source = sbc/eob, with confidence + snippet) for every field it populates.
+    Returns the list of paths that were populated.
     """
-    doc_type = (doc_type or "").upper()
+    evidence = evidence or {}
+    source = "eob" if (doc_type or "").upper() == "EOB" else "sbc"
     filled: list[str] = []
     for dotted, value in partial.items():
         if value in (None, "", []):
             continue
         current = get_path(data, dotted)
-        authoritative = (
-            (doc_type == "SBC" and dotted in _SBC_FIELDS)
-            or (doc_type == "EOB" and dotted in _EOB_FIELDS)
-        )
-        if current in (None, "", []) or authoritative:
-            set_path(data, dotted, value)
-            mark_from_document(data, dotted)
-            mark_unknown(data, dotted, False)
-            filled.append(dotted)
+        if current not in (None, "", []):
+            continue  # member (or an earlier doc) already answered — leave it
+        set_path(data, dotted, value)
+        mark_from_document(data, dotted)
+        mark_unknown(data, dotted, False)
+        ev = evidence.get(dotted, {})
+        set_source(data, dotted, source,
+                   confidence=ev.get("confidence"), snippet=ev.get("snippet"), raw=ev.get("raw"))
+        filled.append(dotted)
     return filled
 
 

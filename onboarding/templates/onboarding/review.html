@@ -5,9 +5,16 @@
   <p class="sub">Tap anything to fix it. Blank optional fields are totally fine.</p>
 
   {% if extract %}
-    <div class="flash good">Read your {{ extract.documentType }} — filled
-      {{ extract.filled|length }} field{{ extract.filled|length|pluralize }} from your
-      document. Give them a quick check below.</div>
+    {% if extract.count %}
+    <div class="answered-toast">
+      <span class="at-count">+{{ extract.count }}</span>
+      <span class="at-text">answered from your {{ extract.docLabel }} — {{ left }} left.
+        Give them a quick check below.</span>
+    </div>
+    {% else %}
+    <div class="flash">Couldn't get much from that one — no problem, it's quick to
+      just tell me. {{ left }} left.</div>
+    {% endif %}
   {% endif %}
 
   {% for section, rows in groups.items %}
@@ -15,7 +22,12 @@
     <h2>{{ section }}</h2>
     {% for row in rows %}
     <a class="review-row" href="{% url 'step' row.id %}?return=review">
-      <span class="rr-q">{{ row.prompt }}</span>
+      <span class="rr-main">
+        <span class="rr-q">{{ row.prompt }}</span>
+        <span class="src-chip {{ row.chip.css }}"
+              {% if row.chip.snippet %}title="{{ row.chip.snippet }}{% if row.chip.confidence %} · {{ row.chip.confidence }}% sure{% endif %}"{% endif %}>
+          {{ row.chip.icon }} {{ row.chip.label }}{% if row.chip.confidence %} · {{ row.chip.confidence }}%{% endif %}</span>
+      </span>
       <span class="rr-v{% if row.display == '—' %} empty{% endif %}">{{ row.display }}</span>
     </a>
     {% endfor %}

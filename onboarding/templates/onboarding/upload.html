@@ -11,6 +11,7 @@
 
   <form method="post" action="{% url 'extract' %}" enctype="multipart/form-data">
     {% csrf_token %}
+    {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
     <label class="field-label">Which document is this?</label>
     <div class="chips">
       <label class="chip"><input type="radio" name="docType" value="SBC" checked><span>SBC</span></label>
@@ -26,6 +27,10 @@
     <button class="btn primary" type="submit">Read my document →</button>
   </form>
 
+  {% if next %}
+  <a class="btn ghost" href="{{ next }}">← Back, I’ll keep going</a>
+  {% else %}
   <a class="btn ghost" href="{% url 'manual_start' %}">Skip, I’ll answer manually</a>
+  {% endif %}
 </div>
 {% endblock %}

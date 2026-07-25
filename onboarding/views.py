@@ -6,6 +6,7 @@ Each answered step is written immediately, so a refresh resumes in place.
 from __future__ import annotations
 
 import json
+from collections import Counter
 from datetime import datetime, timezone
 
 from django.conf import settings
@@ -37,6 +38,7 @@ def _get_data(request):
 
 
 def _save(request, data):
+    _apply_inferences(data)
     request.session["data"] = data
     request.session.modified = True
 
@@ -51,6 +53,44 @@ def _touch_source(request, data):
         data["meta"]["source"] = "upload"
     else:
         data["meta"]["source"] = "manual"
+
+
+def _record_step_source(request, data, st):
+    """Record per-field provenance for a manually answered step.
+
+    manual = the member typed/picked it; assumed = an explicit 'start at $0';
+    unknown = an explicit 'I'm not sure' skip with no value.
+    """
+    path = st["path"]
+    if st["input"] == "prescriptions":
+        return
+    value = schema.get_path(data, path)
+    action = request.POST.get("action", "next")
+    if action == "skip":
+        if value == st.get("skip_value") and st.get("skip_value") is not None:
+            schema.set_source(data, path, "assumed")
+        else:
+            schema.set_source(data, path, "unknown")
+    elif value not in (None, "", []):
+        schema.set_source(data, path, "manual", member_confirmed=True)
+    else:
+        schema.set_source(data, path, "unknown")
+
+
+def _apply_inferences(data):
+    """Derive fields we can, and label them 'inferred'.
+
+    HSA eligibility follows from an HDHP plan type — unless the member has
+    already answered it themselves.
+    """
+    plan_type = schema.get_path(data, "plan.planType")
+    elig_src = schema.get_source(data, "hsa.eligible")
+    member_set = bool(elig_src) and elig_src.get("source") in ("manual",)
+    if plan_type == "HDHP" and not member_set and schema.get_path(data, "hsa.eligible") is None:
+        schema.set_path(data, "hsa.eligible", True)
+        schema.mark_unknown(data, "hsa.eligible", False)
+        schema.set_source(data, "hsa.eligible", "inferred",
+                          snippet="Plan type is HDHP, which is HSA-eligible.")
 
 
 # --- screens --------------------------------------------------------------
@@ -86,10 +126,18 @@ def manual_start(request):
     return redirect("step", step_id=flow.first_step_id(data))
 
 
+def _safe_next(raw):
+    """Only allow an internal path back into the flow."""
+    if raw and raw.startswith("/") and not raw.startswith("//"):
+        return raw
+    return ""
+
+
 @require_http_methods(["GET"])
 def upload(request):
     return render(request, "onboarding/upload.html",
                   {"gemini_ready": gemini.is_configured(),
+                   "next": _safe_next(request.GET.get("next", "")),
                    "flash": request.session.pop("flash", None)})
 
 
@@ -119,16 +167,30 @@ def extract(request):
         )
         return redirect("manual_start")
 
-    filled = schema.merge_extraction(data, result["fields"], result["documentType"])
+    filled = schema.merge_extraction(data, result["fields"], result["documentType"],
+                                     result.get("evidence"))
     _touch_source(request, data)
     _save(request, data)
 
+    doc_label = result["documentType"] if result["documentType"] in ("SBC", "EOB") else "document"
     request.session["extract_summary"] = {
         "documentType": result["documentType"],
+        "docLabel": doc_label,
+        "count": len(filled),
         "filled": filled,
         "unreadable": result.get("unreadable", []),
     }
-    # Show what we found (review re-asks only the blanks).
+
+    # Mid-flow upload (from the persistent 📎): drop the member back where they
+    # were with a toast, so they never lose their place. First upload from the
+    # path screen has no `next` and goes to review to show everything we found.
+    nxt = _safe_next(request.POST.get("next", ""))
+    if nxt:
+        request.session["flash"] = (
+            f"+{len(filled)} answered from your {doc_label}" if filled
+            else "Couldn't get much from that one — no problem, just tell me."
+        )
+        return redirect(nxt)
     return redirect("review")
 
 
@@ -156,6 +218,7 @@ def step(request, step_id):
                 return render(request, "onboarding/step.html",
                               _step_ctx(st, data, step_id, error=error, return_to=return_to))
             request.session["manual_used"] = True
+            _record_step_source(request, data, st)
             _touch_source(request, data)
             _save(request, data)
 
@@ -210,12 +273,14 @@ def _step_ctx(st, data, step_id, error=None, return_to=""):
         "selected": {str(current)} if not isinstance(current, list) else set(map(str, current)),
         "error": error,
         "progress": flow.progress(step_id, data),
+        "left": flow.steps_left(data),
         "section": st.get("section", ""),
         "prev_id": flow.prev_step_id(step_id, data),
         "return_to": return_to,
         "name": schema.get_path(data, "identity.name"),
         "prescriptions": data.get("prescriptions", []),
         "carriers": CARRIERS,
+        "show_attach": True,
     }
 
 
@@ -226,11 +291,38 @@ def review(request):
     groups = _grouped_view(data)
     return render(request, "onboarding/review.html",
                   {"data": data, "groups": groups, "extract": flash,
-                   "name": schema.get_path(data, "identity.name")})
+                   "left": flow.steps_left(data),
+                   "name": schema.get_path(data, "identity.name"),
+                   "show_attach": True})
+
+
+# Provenance chip per source (icon, label, css modifier).
+_CHIPS = {
+    "sbc":            ("📄", "From your SBC", "doc"),
+    "eob":            ("🧾", "From your EOB", "doc"),
+    "card":           ("💳", "From your card", "doc"),
+    "manual":         ("💬", "You told me", "manual"),
+    "inferred":       ("✨", "We worked it out", "inferred"),
+    "assumed":        ("🅰", "Assumed", "assumed"),
+    "not_applicable": ("—", "Not applicable", "unknown"),
+    "unknown":        ("❓", "Not sure yet", "unknown"),
+}
+
+
+def _chip_for(data, path, value):
+    src = schema.get_source(data, path)
+    key = src["source"] if src else ("manual" if value not in (None, "", []) else "unknown")
+    if key not in _CHIPS:
+        key = "manual" if value not in (None, "", []) else "unknown"
+    icon, label, css = _CHIPS[key]
+    conf = src.get("confidence") if src else None
+    return {"icon": icon, "label": label, "css": css,
+            "confidence": round(conf * 100) if isinstance(conf, (int, float)) else None,
+            "snippet": (src or {}).get("snippet")}
 
 
 def _grouped_view(data):
-    """Build (section -> [(step, label, display_value, edit_id)]) for review."""
+    """Build (section -> rows) for review, each row carrying a provenance chip."""
     groups: dict[str, list] = {}
     for st in flow.active_steps(data):
         section = st.get("section", "Other")
@@ -240,6 +332,7 @@ def _grouped_view(data):
             "prompt": st["prompt"],
             "display": _display(st, value),
             "path": st["path"],
+            "chip": _chip_for(data, st["path"], value),
         })
     return groups
 
@@ -273,13 +366,22 @@ def summary(request):
 
     ytd_pct = _ytd_pct(data)
     pretty = json.dumps(data, indent=2)
+
+    # Provenance breakdown for the receipt — where each captured value came from.
+    order = ["sbc", "eob", "card", "manual", "inferred", "assumed"]
+    counts = Counter(v.get("source") for v in data["meta"].get("sources", {}).values())
+    provenance = [{"icon": _CHIPS[k][0], "label": _CHIPS[k][1], "css": _CHIPS[k][2],
+                   "count": counts[k]} for k in order if counts.get(k)]
+
     return render(request, "onboarding/summary.html", {
         "data": data,
         "json": pretty,
         "ready": ready,
         "missing": missing,
         "ytd_pct": ytd_pct,
+        "provenance": provenance,
         "name": schema.get_path(data, "identity.name"),
+        "show_attach": True,
     })
 
 

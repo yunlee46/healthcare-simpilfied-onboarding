@@ -318,3 +318,19 @@ def progress(current_id: str, data: dict) -> int:
     if current_id not in ids or not ids:
         return 0
     return int(round((ids.index(current_id)) / len(ids) * 100))
+
+
+def steps_left(data: dict) -> int:
+    """How many active questions still need an answer.
+
+    A step is resolved once it has a value OR the member explicitly skipped it
+    (its path is in meta.unknownFields). This is the number that visibly
+    collapses when an upload fills several fields at once.
+    """
+    unknown = set(data.get("meta", {}).get("unknownFields", []))
+    n = 0
+    for s in active_steps(data):
+        val = schema.get_path(data, s["path"])
+        if val in (None, "", []) and s["path"] not in unknown:
+            n += 1
+    return n

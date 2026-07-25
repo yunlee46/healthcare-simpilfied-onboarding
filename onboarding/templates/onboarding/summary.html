@@ -32,14 +32,27 @@
   </div>
   {% endif %}
 
+  {% if provenance %}
+  <div class="prov-legend">
+    <div class="pl-title">Where your numbers came from</div>
+    <div class="pl-chips">
+      {% for p in provenance %}
+      <span class="src-chip {{ p.css }}">{{ p.icon }} {{ p.count }} {{ p.label }}</span>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
   <div class="json-block">
     <div class="json-actions">
-      <span class="jb-title">Structured output (JSON)</span>
+      <span class="jb-title">Here’s exactly what we saved. Nothing hidden.</span>
       <a class="btn small" href="{% url 'summary_json' %}">Download</a>
     </div>
     <textarea class="json-view" readonly rows="16">{{ json }}</textarea>
     <p class="why">This clean JSON is what plugs into Emme’s pricing engine — the B2B
-      unlock. Source: <b>{{ data.meta.source }}</b>.
+      unlock. Every field carries its provenance under <b>meta.sources</b>
+      (source, confidence, and the verbatim snippet it came from). Source:
+      <b>{{ data.meta.source }}</b>.
       Skipped: {{ data.meta.unknownFields|length }} field{{ data.meta.unknownFields|length|pluralize }}.</p>
   </div>
 
