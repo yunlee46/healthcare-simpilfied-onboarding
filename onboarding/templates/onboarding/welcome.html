@@ -1,0 +1,15 @@
+{% extends 'onboarding/base.html' %}
+{% block content %}
+<div class="card center">
+  <div class="hero">👋</div>
+  <h1>Hi! What should we call you?</h1>
+  <p class="sub">This takes about 2 minutes. No jargon, promise.</p>
+  <form method="post" action="{% url 'welcome' %}">
+    {% csrf_token %}
+    <input class="text-input" type="text" name="name"
+           value="{{ name|default:'' }}" placeholder="First name" autofocus>
+    {% if error %}<p class="err">{{ error }}</p>{% endif %}
+    <button class="btn primary" type="submit">Let’s go →</button>
+  </form>
+</div>
+{% endblock %}

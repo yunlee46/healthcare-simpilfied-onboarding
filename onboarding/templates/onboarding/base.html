@@ -1,0 +1,21 @@
+{% load static %}<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <title>Emme — Plan Onboarding</title>
+  <link rel="stylesheet" href="{% static 'onboarding/styles.css' %}">
+</head>
+<body>
+  <div class="phone">
+    <header class="topbar">
+      <a class="brand" href="{% url 'welcome' %}">emme</a>
+      {% block progress %}{% endblock %}
+    </header>
+    <main class="screen">
+      {% if flash %}<div class="flash">{{ flash }}</div>{% endif %}
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+</body>
+</html>

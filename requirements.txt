@@ -1,0 +1,5 @@
+Django>=5.0,<7.0
+# Optional — only needed for the document-upload/extraction path.
+# The manual flow + summary + JSON runs without these.
+google-genai>=1.0.0
+python-dotenv>=1.0.0

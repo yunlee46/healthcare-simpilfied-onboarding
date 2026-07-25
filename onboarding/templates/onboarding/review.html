@@ -1,0 +1,28 @@
+{% extends 'onboarding/base.html' %}
+{% block content %}
+<div class="card">
+  <h1>Here’s what we have so far</h1>
+  <p class="sub">Tap anything to fix it. Blank optional fields are totally fine.</p>
+
+  {% if extract %}
+    <div class="flash good">Read your {{ extract.documentType }} — filled
+      {{ extract.filled|length }} field{{ extract.filled|length|pluralize }} from your
+      document. Give them a quick check below.</div>
+  {% endif %}
+
+  {% for section, rows in groups.items %}
+  <div class="review-group">
+    <h2>{{ section }}</h2>
+    {% for row in rows %}
+    <a class="review-row" href="{% url 'step' row.id %}?return=review">
+      <span class="rr-q">{{ row.prompt }}</span>
+      <span class="rr-v{% if row.display == '—' %} empty{% endif %}">{{ row.display }}</span>
+    </a>
+    {% endfor %}
+  </div>
+  {% endfor %}
+
+  <a class="btn primary" href="{% url 'summary' %}">See my summary →</a>
+  <a class="btn ghost" href="{% url 'reset' %}">Start over</a>
+</div>
+{% endblock %}

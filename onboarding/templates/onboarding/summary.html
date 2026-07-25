@@ -1,0 +1,51 @@
+{% extends 'onboarding/base.html' %}
+{% load humanize %}
+{% block content %}
+<div class="card summary">
+  <h1>Here’s what we know about your plan</h1>
+
+  <div class="readiness {% if ready %}ready{% else %}partial{% endif %}">
+    {% if ready %}
+      Ready to estimate your costs ✓
+    {% else %}
+      A few things left to make this accurate
+      <ul>{% for m in missing %}<li>{{ m }}</li>{% endfor %}</ul>
+    {% endif %}
+  </div>
+
+  <div class="plan-card">
+    <div class="pc-row"><span>Name</span><b>{{ data.identity.name|default:"—" }}</b></div>
+    <div class="pc-row"><span>Carrier</span><b>{{ data.plan.carrier|default:"—" }}</b></div>
+    <div class="pc-row"><span>Plan type</span><b>{{ data.plan.planType|default:"—" }}</b></div>
+    <div class="pc-row"><span>Deductible</span>
+      <b>{% if data.costSharing.deductibleIndividual %}${{ data.costSharing.deductibleIndividual|intcomma }}{% else %}—{% endif %}</b></div>
+    <div class="pc-row"><span>Out-of-pocket max</span>
+      <b>{% if data.costSharing.oopMaxIndividual %}${{ data.costSharing.oopMaxIndividual|intcomma }}{% else %}—{% endif %}</b></div>
+    <div class="pc-row"><span>Monthly premium</span>
+      <b>{% if data.costSharing.monthlyPremium %}${{ data.costSharing.monthlyPremium|intcomma }}{% else %}—{% endif %}</b></div>
+  </div>
+
+  {% if ytd_pct != None %}
+  <div class="ytd">
+    <div class="ytd-label">Deductible met this year — {{ ytd_pct }}%</div>
+    <div class="progress"><div class="bar" style="width: {{ ytd_pct }}%"></div></div>
+  </div>
+  {% endif %}
+
+  <div class="json-block">
+    <div class="json-actions">
+      <span class="jb-title">Structured output (JSON)</span>
+      <a class="btn small" href="{% url 'summary_json' %}">Download</a>
+    </div>
+    <textarea class="json-view" readonly rows="16">{{ json }}</textarea>
+    <p class="why">This clean JSON is what plugs into Emme’s pricing engine — the B2B
+      unlock. Source: <b>{{ data.meta.source }}</b>.
+      Skipped: {{ data.meta.unknownFields|length }} field{{ data.meta.unknownFields|length|pluralize }}.</p>
+  </div>
+
+  <div class="nav">
+    <a class="back" href="{% url 'review' %}">← Back to review</a>
+    <a class="back right" href="{% url 'reset' %}">Start over</a>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,31 @@
+{% extends 'onboarding/base.html' %}
+{% block content %}
+<div class="card">
+  <h1>Upload your SBC or EOB</h1>
+  <p class="sub">I’ll read what I can and only ask you about the rest.</p>
+
+  {% if not gemini_ready %}
+  <p class="note">Heads up — document reading isn’t configured in this environment,
+    so uploading will drop you into the manual flow. That path works fully on its own.</p>
+  {% endif %}
+
+  <form method="post" action="{% url 'extract' %}" enctype="multipart/form-data">
+    {% csrf_token %}
+    <label class="field-label">Which document is this?</label>
+    <div class="chips">
+      <label class="chip"><input type="radio" name="docType" value="SBC" checked><span>SBC</span></label>
+      <label class="chip"><input type="radio" name="docType" value="EOB"><span>EOB</span></label>
+      <label class="chip"><input type="radio" name="docType" value="both"><span>Both</span></label>
+    </div>
+    <p class="why">SBC = plan rules (deductibles, copays). EOB = what you’ve spent so far.</p>
+
+    <label class="field-label">Photo or file</label>
+    <input class="file-input" type="file" name="document"
+           accept="image/*,application/pdf" capture="environment" multiple>
+
+    <button class="btn primary" type="submit">Read my document →</button>
+  </form>
+
+  <a class="btn ghost" href="{% url 'manual_start' %}">Skip, I’ll answer manually</a>
+</div>
+{% endblock %}

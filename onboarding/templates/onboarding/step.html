@@ -1,0 +1,124 @@
+{% extends 'onboarding/base.html' %}
+
+{% block progress %}
+<div class="progress"><div class="bar" style="width: {{ progress }}%"></div></div>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+  {% if section %}<div class="section-tag">{{ section }}</div>{% endif %}
+  <h1>{{ step.prompt }}</h1>
+  {% if step.why %}<p class="why">{{ step.why }}</p>{% endif %}
+  {% if error %}<p class="err">⚠ {{ error }}</p>{% endif %}
+
+  {% if step.input == 'prescriptions' %}
+    {% if prescriptions %}
+    <ul class="rx-list">
+      {% for p in prescriptions %}
+      <li>
+        <span class="rx-name">{{ p.drugName }}{% if p.dosage %} · {{ p.dosage }}{% endif %}{% if p.frequency %} · {{ p.frequency }}{% endif %}</span>
+        <form method="post" action="{% url 'step' step_id %}">
+          {% csrf_token %}
+          <input type="hidden" name="return" value="{{ return_to }}">
+          <input type="hidden" name="index" value="{{ forloop.counter0 }}">
+          <button class="link-btn" type="submit" name="action" value="remove">remove</button>
+        </form>
+      </li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+
+    <form method="post" action="{% url 'step' step_id %}" class="rx-add">
+      {% csrf_token %}
+      <input type="hidden" name="return" value="{{ return_to }}">
+      <input class="text-input" type="text" name="drugName" placeholder="Medication name">
+      <input class="text-input" type="text" name="dosage" placeholder="Dosage (e.g. 10 mg)">
+      <div class="chips small">
+        <label class="chip"><input type="radio" name="frequency" value="daily" checked><span>Daily</span></label>
+        <label class="chip"><input type="radio" name="frequency" value="weekly"><span>Weekly</span></label>
+        <label class="chip"><input type="radio" name="frequency" value="monthly"><span>Monthly</span></label>
+        <label class="chip"><input type="radio" name="frequency" value="as_needed"><span>As needed</span></label>
+      </div>
+      <div class="chips small">
+        <label class="chip"><input type="radio" name="paymentMethod" value="insurance" checked><span>Insurance</span></label>
+        <label class="chip"><input type="radio" name="paymentMethod" value="cash"><span>Cash</span></label>
+      </div>
+      <input class="text-input" type="text" name="pharmacy" placeholder="Preferred pharmacy (optional)">
+      <button class="btn secondary" type="submit" name="action" value="add">+ Add medication</button>
+    </form>
+
+    <form method="post" action="{% url 'step' step_id %}">
+      {% csrf_token %}
+      <input type="hidden" name="return" value="{{ return_to }}">
+      <button class="btn primary" type="submit" name="action" value="done">
+        {% if prescriptions %}Done →{% else %}Skip, none right now →{% endif %}</button>
+    </form>
+
+  {% else %}
+    <form method="post" action="{% url 'step' step_id %}">
+      {% csrf_token %}
+      <input type="hidden" name="return" value="{{ return_to }}">
+
+      {% if step.input == 'chips' or step.input == 'stepper' %}
+        <div class="chips{% if step.input == 'stepper' %} stepper{% endif %}">
+          {% for opt in step.options %}
+            <button class="chip{% if opt.value|stringformat:'s' in selected %} on{% endif %}"
+                    type="submit" name="value" value="{{ opt.value }}">{{ opt.label }}</button>
+          {% endfor %}
+        </div>
+        {% if step.optional %}
+          <button class="btn ghost" type="submit" name="action" value="skip">I’m not sure — skip</button>
+        {% endif %}
+
+      {% elif step.input == 'multiselect' %}
+        <div class="checks">
+          {% for opt in step.options %}
+            <label class="check">
+              <input type="checkbox" name="value" value="{{ opt.value }}"
+                     {% if opt.value|stringformat:'s' in selected %}checked{% endif %}>
+              <span>{{ opt.label }}</span>
+            </label>
+          {% endfor %}
+        </div>
+        {% if step.allow_other %}
+          <input class="text-input" type="text" name="other" placeholder="Something else? Type it here">
+        {% endif %}
+        <button class="btn primary" type="submit">Continue →</button>
+        {% if step.optional %}
+          <button class="btn ghost" type="submit" name="action" value="skip">Skip this</button>
+        {% endif %}
+
+      {% elif step.input == 'carrier' %}
+        <input class="text-input" type="text" name="value" list="carrier-list"
+               value="{{ value_str }}" placeholder="{{ step.placeholder }}" autofocus autocomplete="off">
+        <datalist id="carrier-list">
+          {% for c in carriers %}<option value="{{ c }}">{% endfor %}
+        </datalist>
+        <button class="btn primary" type="submit">Continue →</button>
+        {% if step.optional %}
+          <button class="btn ghost" type="submit" name="action" value="skip">Skip</button>
+        {% endif %}
+
+      {% else %}
+        <div class="input-wrap{% if step.input == 'money' %} money{% endif %}">
+          {% if step.input == 'money' %}<span class="prefix">$</span>{% endif %}
+          <input class="text-input"
+                 type="{% if step.input == 'email' %}email{% else %}text{% endif %}"
+                 {% if step.input == 'money' %}inputmode="decimal"{% elif step.input == 'zip' %}inputmode="numeric"{% endif %}
+                 name="value" value="{{ value_str }}" placeholder="{{ step.placeholder }}" autofocus>
+        </div>
+        <button class="btn primary" type="submit">Continue →</button>
+        {% if step.optional %}
+          <button class="btn ghost" type="submit" name="action" value="skip">
+            {% if step.skip_value == 0 %}Not sure — start at $0{% else %}I’m not sure — skip{% endif %}</button>
+        {% endif %}
+      {% endif %}
+    </form>
+  {% endif %}
+
+  <div class="nav">
+    {% if prev_id %}<a class="back" href="{% url 'step' prev_id %}">← Back</a>{% endif %}
+    <a class="back right" href="{% url 'review' %}">Review &amp; finish →</a>
+  </div>
+</div>
+{% endblock %}
